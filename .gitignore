@@ -1,0 +1,29 @@
+
+# Environment files and secrets
+.env
+.env.*
+*.credentials
+*.pem
+*.key
+secrets/
+
+# Original working data — review before publishing
+Legal_Compliance_Requests.xlsx
+
+# Power BI Desktop files — review before publishing
+*.pbix
+
+# Private workflow exports
+workflow/exports/
+workflow/private/
+*.zip
+
+# Temporary files and logs
+*.tmp
+*.log
+*.bak
+*~
+
+# Operating-system files
+.DS_Store
+Thumbs.db
