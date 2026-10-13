@@ -1,45 +1,51 @@
-# Testing log and status
+# Testing log and project status
 
-## Verified
+## Current status
 
-| Area | Evidence / result | Status |
+The reporting and email path has been tested successfully. The scheduled cloud flow is enabled. The first unattended recurrence and the no-match case have not yet been independently confirmed.
+
+## Verified tests
+
+| Area | Evidence / observed result | Status |
 |---|---|---|
-| Excel connector | `List rows present in a table` successfully retrieved the OneDrive workbook/table; HTTP status 200. | Passed |
-| Filter array | The rule excluded closed items and included open High-priority items or open overdue items. One inspected run returned six requests. | Passed for inspected run |
-| HTML summary | A Create HTML table action was configured for Request ID, Request Type, Due Date, Priority, Status and Assigned To. | Configured |
-| Manual email | An email was received from the tested workflow. | Email delivery passed; row contents require final consistency check |
-| Scheduled flow | Initial scheduled run produced more emails than intended. A `For each` container was identified around reporting actions and removed during restructuring. | Not yet validated; keep disabled |
+| Excel connector | `List rows present in a table` returned data from the OneDrive workbook; the action showed HTTP status 200. | Passed |
+| Filter array | An inspected run returned six requests matching the rule. | Passed for the inspected data and date |
+| Rule behaviour | Results included open High-priority records and an overdue Medium-priority record, while no Closed records appeared in the inspected output. | Passed for inspected run |
+| HTML table | Table was configured with Request ID, Request Type, Due Date, Priority, Status and Assigned To. Its input is `body('Filter_array')`. | Passed in corrected test |
+| Email delivery | One email arrived containing six filtered request rows after the unnecessary `For each` loop was removed. | Passed for test run |
+| Summary structure | HTML table custom column values were entered as expressions to avoid per-row dynamic content causing an unnecessary loop. | Corrected and test-run |
+| Schedule | Weekday recurrence at 09:00 with `Central Europe Standard Time`; scheduled flow is enabled. | Configured; awaiting natural scheduled-run verification |
 
-## Filter rule
+## Example result from one inspected run
 
-A request should pass only if:
-
-```text
-Status != "Closed" AND (Priority == "High" OR Due_Date < Today in Prague)
-```
-
-In the inspected sample output, these six records matched on 12 October 2026:
+The following six records appeared in the Filter array output inspected on 12 October 2026. This is evidence from that run, not a fixed result count for future runs.
 
 | Request ID | Priority | Status | Due date | Why included |
 |---|---|---|---|---|
-| REQ-002 | High | In Progress | 2026-10-09 | High priority and overdue |
-| REQ-003 | Medium | In Progress | 2026-10-10 | Overdue |
-| REQ-006 | High | In Progress | 2026-10-07 | High priority and overdue |
-| REQ-010 | High | New | 2026-10-11 | High priority and overdue |
-| REQ-012 | High | New | 2026-10-17 | High priority, not overdue |
-| REQ-014 | High | In Progress | 2026-10-15 | High priority, not overdue |
+| REQ-002 | High | In Progress | 2026-10-09 | High priority; overdue on the inspected date |
+| REQ-003 | Medium | In Progress | 2026-10-10 | Overdue on the inspected date |
+| REQ-006 | High | In Progress | 2026-10-07 | High priority; overdue on the inspected date |
+| REQ-010 | High | New | 2026-10-11 | High priority; overdue on the inspected date |
+| REQ-012 | High | New | 2026-10-17 | High priority, though not overdue on the inspected date |
+| REQ-014 | High | In Progress | 2026-10-15 | High priority, though not overdue on the inspected date |
 
-This is a record of the sample run, not a promise that the data will always return six rows; the result changes when the workbook or date changes.
+## Remaining validation
 
-## Required validation before scheduled use
+- [ ] Confirm the first unattended scheduled run occurs at the configured weekday time.
+- [ ] Confirm the scheduled run sends at most one email and only when qualifying requests exist.
+- [ ] Test a no-match scenario and confirm the False branch sends no email.
+- [ ] Review the run history after the natural scheduled run and add the date/result below.
+- [ ] Add project screenshots after redacting personal and environment details.
+- [ ] Add a clean synthetic CSV, if intended for publication, after data review.
 
-1. Ensure the scheduled flow remains turned off while editing.
-2. Check the flow structure: Recurrence → List rows → Filter array → Condition.
-3. Ensure Condition uses `length(body('Filter_array'))` **is greater than** `0`.
-4. Ensure only the True branch contains Create HTML table followed by Send an email (V2); False has no action.
-5. Ensure Create HTML table's From is `body('Filter_array')`, not the original Excel `value` array.
-6. Ensure no `For each`/`Apply to each` loop wraps the HTML table or email when sending one summary per run.
-7. Run one controlled test and inspect the run history.
-8. Confirm the email contains exactly the filtered records and is sent once.
-9. Test the no-match case and verify no email is sent.
-10. Only after successful tests, decide whether to enable the weekday schedule.
+## Scheduled-run evidence log
+
+Add a new entry when verified:
+
+| Date/time (Prague) | Run outcome | Matching rows | Email count | Notes |
+|---|---|---:|---:|---|
+| Pending | Pending | — | — | First unattended scheduled run has not yet been recorded here. |
+
+## Operational note: two flows
+
+The manual flow is retained as a test/reference flow. The scheduled flow is the operational flow. The flows are independent; manually running the test flow near a scheduled run can produce two separate summary emails. This is not the same as duplicate email actions inside one run.
